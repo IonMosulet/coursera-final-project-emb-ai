@@ -2,7 +2,7 @@ import requests
 import json
 
 def emotion_detector(text_to_analyze):
-    """Calls the Watson Emotion Analysis API and returns the dominant emotion + score."""
+    """Calls the Watson Emotion Analysis API and returns emotions with dominant emotion."""
     
     url = 'https://sn-watson-emotion.labs.skills.network/v1/watson.runtime.nlp.v1/NlpService/EmotionPredict'
     
@@ -12,35 +12,57 @@ def emotion_detector(text_to_analyze):
     
     response = requests.post(url, json=myobj, headers=header)
     
-    # Debug: Print status and response (very useful in Coursera labs)
+    # Debug prints (helpful during development)
     print(f"Status Code: {response.status_code}")
-    print(f"Raw Response: {response.text[:500]}...")  # First 500 chars
     
     if response.status_code == 200:
         try:
-            formatted_response = response.json()
+            # Convert response text to dictionary using json library (as requested)
+            formatted_response = json.loads(response.text)
             
-            # Extract the emotions
+            # Extract emotions from the response
             emotions = formatted_response['emotionPredictions'][0]['emotion']
             
-            # Find the dominant emotion (highest score)
-            dominant_emotion = max(emotions, key=emotions.get)
-            score = emotions[dominant_emotion]
+            anger = emotions.get('anger', 0)
+            disgust = emotions.get('disgust', 0)
+            fear = emotions.get('fear', 0)
+            joy = emotions.get('joy', 0)
+            sadness = emotions.get('sadness', 0)
+            
+            # Find dominant emotion (highest score)
+            emotion_scores = {
+                'anger': anger,
+                'disgust': disgust,
+                'fear': fear,
+                'joy': joy,
+                'sadness': sadness
+            }
+            dominant_emotion = max(emotion_scores, key=emotion_scores.get)
             
             return {
-                'label': dominant_emotion,   # e.g., 'joy'
-                'score': score
+                'anger': anger,
+                'disgust': disgust,
+                'fear': fear,
+                'joy': joy,
+                'sadness': sadness,
+                'dominant_emotion': dominant_emotion
             }
             
         except Exception as e:
             print(f"Error parsing response: {e}")
-            return {'label': None, 'score': None}
+            return {
+                'anger': 0, 'disgust': 0, 'fear': 0, 'joy': 0, 'sadness': 0,
+                'dominant_emotion': None
+            }
     else:
-        print(f"API Error: {response.status_code}")
-        return {'label': None, 'score': None}
+        print(f"API Error: {response.status_code} - {response.text[:300]}")
+        return {
+            'anger': 0, 'disgust': 0, 'fear': 0, 'joy': 0, 'sadness': 0,
+            'dominant_emotion': None
+        }
 
 
-# For testing when running directly
+# For testing when running directly from terminal
 if __name__ == "__main__":
     import sys
     text = sys.argv[1] if len(sys.argv) > 1 else "I love this new technology."
